@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.13.1.58284",
-      "templateHash": "8676604244349503249"
+      "templateHash": "4996665274567352412"
     }
   },
   "parameters": {
@@ -35,7 +35,7 @@
     }
   },
   "variables": {
-    "$fxv#0": "<policies>\r\n    <inbound>\r\n        <validate-jwt header-name=\"Authorization\" require-scheme=\"Bearer\" output-token-variable-name=\"jwt\">\r\n            <openid-config url=\"https://login.microsoftonline.com/{{TenantID}}/v2.0/.well-known/openid-configuration\" />\r\n            <audiences>\r\n                <audience>{{AudienceUri}}</audience>\r\n            </audiences>\r\n        </validate-jwt>\r\n        <base />\r\n    </inbound>\r\n    <backend>\r\n        <base />\r\n    </backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>",
+    "$fxv#0": "<policies>\r\n    <inbound>\r\n        <validate-jwt header-name=\"Authorization\" require-scheme=\"Bearer\" output-token-variable-name=\"jwt\">\r\n            <openid-config url=\"https://login.microsoftonline.com/{{TenantID}}/.well-known/openid-configuration\" />\r\n            <audiences>\r\n                <audience>{{AudienceUri}}</audience>\r\n            </audiences>\r\n        </validate-jwt>\r\n        <base />\r\n    </inbound>\r\n    <backend>\r\n        <base />\r\n    </backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>",
     "uniqueName": "[format('{0}-{1}', parameters('prefix'), uniqueString(parameters('prefix'), resourceGroup().id))]",
     "apiName": "DemoJWTApi",
     "apiPolicyXml": "[replace(replace(variables('$fxv#0'), '{{TenantID}}', parameters('tenantID')), '{{AudienceUri}}', parameters('audienceUri'))]",

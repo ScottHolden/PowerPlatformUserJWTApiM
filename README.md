@@ -77,3 +77,4 @@ _Note: This demo is designed to allow API-M to be deployed in a completely diffe
 ## Debugging
 
 An application insights resource is deployed alongside API-M, this will allow you to view logs for API requests.
+- Tip: Within Application Insights open the 'Live metrics' tab, click on the filter (funnel) button in the top right next to 'Sample telemetry' and click continue. This will show a live log stream in the top right box. If the Live metrics screen says 'waiting for application', send a test operation from Power Platform to wake up the API-M instance (it is running on a Consumption plan).
