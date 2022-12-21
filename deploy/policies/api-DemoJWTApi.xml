@@ -1,0 +1,20 @@
+<policies>
+    <inbound>
+        <validate-jwt header-name="Authorization" require-scheme="Bearer" output-token-variable-name="jwt">
+            <openid-config url="https://login.microsoftonline.com/{{TenantID}}/v2.0/.well-known/openid-configuration" />
+            <audiences>
+                <audience>{{AudienceUri}}</audience>
+            </audiences>
+        </validate-jwt>
+        <base />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>

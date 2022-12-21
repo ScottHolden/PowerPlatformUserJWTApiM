@@ -1,0 +1,213 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.13.1.58284",
+      "templateHash": "8676604244349503249"
+    }
+  },
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "defaultValue": "Demo-JWTApi"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "audienceUri": {
+      "type": "string",
+      "metadata": {
+        "description": "This is the audience URI of the application that this API represents, typically this would be: api://<clientId>/"
+      }
+    },
+    "tenantID": {
+      "type": "string",
+      "metadata": {
+        "description": "This is the Tenant ID (guid or FQDN format) where the Application Registration above lives"
+      }
+    },
+    "email": {
+      "type": "string",
+      "defaultValue": "noreply@microsoft.com"
+    }
+  },
+  "variables": {
+    "$fxv#0": "<policies>\r\n    <inbound>\r\n        <validate-jwt header-name=\"Authorization\" require-scheme=\"Bearer\" output-token-variable-name=\"jwt\">\r\n            <openid-config url=\"https://login.microsoftonline.com/{{TenantID}}/v2.0/.well-known/openid-configuration\" />\r\n            <audiences>\r\n                <audience>{{AudienceUri}}</audience>\r\n            </audiences>\r\n        </validate-jwt>\r\n        <base />\r\n    </inbound>\r\n    <backend>\r\n        <base />\r\n    </backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>",
+    "uniqueName": "[format('{0}-{1}', parameters('prefix'), uniqueString(parameters('prefix'), resourceGroup().id))]",
+    "apiName": "DemoJWTApi",
+    "apiPolicyXml": "[replace(replace(variables('$fxv#0'), '{{TenantID}}', parameters('tenantID')), '{{AudienceUri}}', parameters('audienceUri'))]",
+    "operationName": "ReflectJWTDetails",
+    "operationPath": "/reflect",
+    "operationPolicyXml": "<policies>\r\n    <inbound>\r\n        <base />\r\n        <return-response>\r\n            <set-status code=\"200\" reason=\"Ok\" />\r\n            <set-body>@{\r\n\t\tvar jwt = (Jwt)context.Variables[\"jwt\"];\r\n            return Newtonsoft.Json.JsonConvert.SerializeObject(new {\r\n                name = jwt.Claims.GetValueOrDefault(\"upn\",\"unknown\"),\r\n                data = jwt.Claims\r\n            });\r\n            }</set-body>\r\n        </return-response>\r\n    </inbound>\r\n    <backend>\r\n        <base />\r\n    </backend>\r\n    <outbound>\r\n        <base />\r\n    </outbound>\r\n    <on-error>\r\n        <base />\r\n    </on-error>\r\n</policies>",
+    "schemaName": "JWTDetails",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service/apis/operations/policies",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/{2}/{3}', variables('uniqueName'), variables('apiName'), variables('operationName'), 'policy')]",
+      "properties": {
+        "format": "rawxml",
+        "value": "[variables('operationPolicyXml')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis/operations', variables('uniqueName'), variables('apiName'), variables('operationName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/policies",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[format('{0}/{1}/{2}', variables('uniqueName'), variables('apiName'), 'policy')]",
+      "properties": {
+        "format": "rawxml",
+        "value": "[variables('apiPolicyXml')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', variables('uniqueName'), variables('apiName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/schemas",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/{2}', variables('uniqueName'), variables('apiName'), uniqueString(variables('schemaName')))]",
+      "properties": {
+        "contentType": "application/vnd.oai.openapi.components+json",
+        "document": {
+          "components": {
+            "schemas": {
+              "[format('{0}', variables('schemaName'))]": "[variables('schema')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', variables('uniqueName'), variables('apiName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/{2}', variables('uniqueName'), variables('apiName'), variables('operationName'))]",
+      "properties": {
+        "displayName": "[variables('operationName')]",
+        "method": "get",
+        "urlTemplate": "[variables('operationPath')]",
+        "responses": [
+          {
+            "statusCode": 200,
+            "description": "[variables('operationName')]",
+            "representations": [
+              {
+                "contentType": "application/json",
+                "schemaId": "[uniqueString(variables('schemaName'))]",
+                "typeName": "[variables('schemaName')]"
+              }
+            ]
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', variables('uniqueName'), variables('apiName'))]",
+        "[resourceId('Microsoft.ApiManagement/service/apis/schemas', variables('uniqueName'), variables('apiName'), uniqueString(variables('schemaName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/loggers",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[format('{0}/{1}', variables('uniqueName'), variables('uniqueName'))]",
+      "properties": {
+        "loggerType": "applicationInsights",
+        "resourceId": "[resourceId('Microsoft.Insights/components', variables('uniqueName'))]",
+        "credentials": {
+          "instrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('uniqueName')), '2020-02-02').InstrumentationKey]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', variables('uniqueName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('uniqueName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/diagnostics",
+      "apiVersion": "2022-04-01-preview",
+      "name": "[format('{0}/{1}', variables('uniqueName'), 'applicationinsights')]",
+      "properties": {
+        "alwaysLog": "allErrors",
+        "loggerId": "[resourceId('Microsoft.ApiManagement/service/loggers', variables('uniqueName'), variables('uniqueName'))]",
+        "sampling": {
+          "percentage": 100,
+          "samplingType": "fixed"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', variables('uniqueName'))]",
+        "[resourceId('Microsoft.ApiManagement/service/loggers', variables('uniqueName'), variables('uniqueName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}', variables('uniqueName'), variables('apiName'))]",
+      "properties": {
+        "displayName": "[variables('apiName')]",
+        "protocols": [
+          "https"
+        ],
+        "path": "[variables('apiName')]",
+        "subscriptionRequired": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', variables('uniqueName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[variables('uniqueName')]",
+      "location": "[parameters('location')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('uniqueName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('uniqueName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('uniqueName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2021-08-01",
+      "name": "[variables('uniqueName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "capacity": 0,
+        "name": "Consumption"
+      },
+      "properties": {
+        "publisherEmail": "[parameters('email')]",
+        "publisherName": "[parameters('prefix')]"
+      }
+    }
+  ]
+}

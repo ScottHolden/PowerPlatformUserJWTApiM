@@ -1,0 +1,24 @@
+<policies>
+    <inbound>
+        <base />
+        <return-response>
+            <set-status code="200" reason="Ok" />
+            <set-body>@{
+		var jwt = (Jwt)context.Variables["jwt"];
+            return Newtonsoft.Json.JsonConvert.SerializeObject(new {
+                name = jwt.Claims.GetValueOrDefault("upn","unknown"),
+                data = jwt.Claims
+            });
+            }</set-body>
+        </return-response>
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
